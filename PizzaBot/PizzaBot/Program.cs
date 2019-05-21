@@ -13,12 +13,22 @@ namespace PizzaBot
     {
         static void Main(string[] args)
         {
-            //Menu menu = new Menu();
-            //menu.SaveToFile();
+           //InitializeDefault();
             Customer customer = new Customer();
             Bot.TakeOrder(customer);
 
             Console.ReadLine();
+        }
+
+        static void InitializeDefault()
+        {
+            Menu menu = new Menu();
+            menu.MenuList.Add(new Margherita());
+            menu.MenuList.Add(new Vegeratian());
+            menu.MenuList.Add(new Spicy());
+            menu.MenuList.Add(new AppleJuice());
+            menu.MenuList.Add(new Vodka());
+            menu.SaveToFile();
         }
     }
 
@@ -31,7 +41,7 @@ namespace PizzaBot
             Menu menu = Menu.LoadFromFile();
             menu.ShowMenu();
             bool wantAnotherItem = false;
-            customer.Order = new List<string>();
+            customer.Order = new List<IFood>();
             int itemNumber = 0;
             do
             {
@@ -39,7 +49,7 @@ namespace PizzaBot
                 try
                 {
                     itemNumber = Convert.ToInt32(Console.ReadLine()) - 1;
-                    customer.Order.Add(menu.PizzaList[itemNumber]);
+                    customer.Order.Add(menu.MenuList[itemNumber]);
                     Console.WriteLine("Do you want anything else?(type yes or no) ");
                     if (Console.ReadLine().ToLower().Equals("yes"))
                         wantAnotherItem = true;
@@ -88,25 +98,29 @@ namespace PizzaBot
             for (int i = 0; i < customer.Order.Count(); i++)
             {
                 Console.Write((i + 1) + ". ");
-                Console.WriteLine(customer.Order[i]);
+                Console.WriteLine(customer.Order[i].Name);
             }
             Console.WriteLine();
         }
     }
 
     [DataContract]
+    [KnownType(typeof(Margherita))]
+    [KnownType(typeof(Vegeratian))]
+    [KnownType(typeof(Spicy))]
+    [KnownType(typeof(AppleJuice))]
+    [KnownType(typeof(Vodka))]
     class Menu
     {
         [DataMember]
-        public readonly string[] PizzaList = { "Margherita", "Pepperoni", "Carbonara", "Vegetarian", "Hawaiian" };
-
+        public List<IFood> MenuList=new List<IFood>();
         public void ShowMenu()
         {
             Console.WriteLine("\n\tMenu:");
-            for (int i = 0; i < PizzaList.Length; i++)
+            for (int i = 0; i < MenuList.Count; i++)
             {
                 Console.Write((i + 1) + ". ");
-                Console.WriteLine(PizzaList[i]);
+                MenuList[i].Describe();
             }
             Console.WriteLine();
         }
@@ -125,7 +139,10 @@ namespace PizzaBot
             FileInfo menuFile = new FileInfo(@"Menu.json");
             FileStream fs = menuFile.Open(FileMode.OpenOrCreate, FileAccess.Write);
             ser.WriteObject(fs, this);
+            fs.Close();
         }
+
+        
     }
 
     class Customer
@@ -133,7 +150,7 @@ namespace PizzaBot
         public string Name { get; set; }
         public string Email { get; set; }
         public string Address { get; set; }
-        public List<string> Order { get; set; }
+        public List<IFood> Order { get; set; }
         public Payment PaymentMethod { get; set; }
     }
 
