@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.Serialization.Json;
+using System.IO;
+using System.Runtime.Serialization;
 
 namespace PizzaBot
 {
@@ -10,6 +13,8 @@ namespace PizzaBot
     {
         static void Main(string[] args)
         {
+            //Menu menu = new Menu();
+            //menu.SaveToFile();
             Customer customer = new Customer();
             Bot.TakeOrder(customer);
 
@@ -23,7 +28,8 @@ namespace PizzaBot
         {
             Console.Write("Hello! Please, enter your name: ");
             customer.Name = Console.ReadLine();
-            Menu.ShowMenu();
+            Menu menu = Menu.LoadFromFile();
+            menu.ShowMenu();
             bool wantAnotherItem = false;
             customer.Order = new List<string>();
             int itemNumber = 0;
@@ -33,7 +39,7 @@ namespace PizzaBot
                 try
                 {
                     itemNumber = Convert.ToInt32(Console.ReadLine()) - 1;
-                    customer.Order.Add(Menu.PizzaList[itemNumber]);
+                    customer.Order.Add(menu.PizzaList[itemNumber]);
                     Console.WriteLine("Do you want anything else?(type yes or no) ");
                     if (Console.ReadLine().ToLower().Equals("yes"))
                         wantAnotherItem = true;
@@ -79,21 +85,22 @@ namespace PizzaBot
         private static void ShowOrder(Customer customer)
         {
             Console.WriteLine("\nYour order:");
-            for(int i=0; i<customer.Order.Count(); i++)
+            for (int i = 0; i < customer.Order.Count(); i++)
             {
                 Console.Write((i + 1) + ". ");
                 Console.WriteLine(customer.Order[i]);
             }
             Console.WriteLine();
         }
-
     }
 
-    static class Menu
+    [DataContract]
+    class Menu
     {
-        public static readonly string[] PizzaList = { "Margherita", "Pepperoni", "Carbonara", "Vegetarian", "Hawaiian" };
+        [DataMember]
+        public readonly string[] PizzaList = { "Margherita", "Pepperoni", "Carbonara", "Vegetarian", "Hawaiian" };
 
-        public static void ShowMenu()
+        public void ShowMenu()
         {
             Console.WriteLine("\n\tMenu:");
             for (int i = 0; i < PizzaList.Length; i++)
@@ -102,6 +109,22 @@ namespace PizzaBot
                 Console.WriteLine(PizzaList[i]);
             }
             Console.WriteLine();
+        }
+
+        public static Menu LoadFromFile()
+        {
+            DataContractJsonSerializer ser = new DataContractJsonSerializer(typeof(Menu));
+            FileInfo menuFile = new FileInfo(@"Menu.json");
+            FileStream fs = menuFile.Open(FileMode.Open, FileAccess.Read);
+            return (Menu)ser.ReadObject(fs);
+        }
+
+        public void SaveToFile()
+        {
+            DataContractJsonSerializer ser = new DataContractJsonSerializer(typeof(Menu));
+            FileInfo menuFile = new FileInfo(@"Menu.json");
+            FileStream fs = menuFile.Open(FileMode.OpenOrCreate, FileAccess.Write);
+            ser.WriteObject(fs, this);
         }
     }
 
